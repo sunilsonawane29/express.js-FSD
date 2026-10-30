@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Express.js Users API & Management Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-content">
+        <div class="logo-group">
+          <div class="badge-icon">⚡</div>
+          <div>
+            <h1>Express.js Users API</h1>
+            <p class="subtitle">Full-Stack Assignment &bull; REST API & Interactive Dashboard</p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button id="btnRefresh" class="btn btn-secondary">
+            <span class="icon">🔄</span> Refresh
+          </button>
+          <button id="btnSeedReset" class="btn btn-ghost" title="Reset to default seed users">
+            <span class="icon">⏮️</span> Reset Seed
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="main-container">
+      <!-- Quick Stats Cards -->
+      <section class="stats-row">
+        <div class="stat-card">
+          <span class="stat-label">Total Users in Database</span>
+          <span class="stat-value" id="statTotalUsers">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Current API Status</span>
+          <span class="stat-value text-emerald" id="statApiStatus">Online (200 OK)</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Active Field Filter</span>
+          <span class="stat-value text-accent" id="statFieldFilter">All Fields</span>
+        </div>
+      </section>
+
+      <!-- Two Column Layout: API Controllers & Data Explorer -->
+      <div class="grid-layout">
+        <!-- Left Column: Operations -->
+        <section class="card panel-operations">
+          <div class="tabs-nav">
+            <button class="tab-btn active" data-tab="tab-query">🔍 Query & Filter</button>
+            <button class="tab-btn" data-tab="tab-single">➕ Add Single</button>
+            <button class="tab-btn" data-tab="tab-bulk-add">📦 Bulk Add</button>
+            <button class="tab-btn" data-tab="tab-bulk-delete">🗑️ Bulk Delete</button>
+          </div>
+
+          <div class="tab-contents">
+            <!-- TAB 1: Query & Field Projection (?fields=name,email) -->
+            <div id="tab-query" class="tab-pane active">
+              <h2 class="pane-title">GET /users with ?fields Projection</h2>
+              <p class="pane-desc">Filter which fields the API returns (e.g. <code>?fields=name,email</code>)</p>
+              
+              <div class="form-group">
+                <label>Select Fields to Request:</label>
+                <div class="checkbox-group">
+                  <label class="checkbox-label"><input type="checkbox" id="field-id" value="id" checked> <code>id</code></label>
+                  <label class="checkbox-label"><input type="checkbox" id="field-name" value="name" checked> <code>name</code></label>
+                  <label class="checkbox-label"><input type="checkbox" id="field-email" value="email" checked> <code>email</code></label>
+                  <label class="checkbox-label"><input type="checkbox" id="field-role" value="role" checked> <code>role</code></label>
+                  <label class="checkbox-label"><input type="checkbox" id="field-age" value="age" checked> <code>age</code></label>
+                  <label class="checkbox-label"><input type="checkbox" id="field-createdAt" value="createdAt"> <code>createdAt</code></label>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="customFields">Custom Query String</label>
+                <input type="text" id="customFields" class="form-input" placeholder="e.g. name,email or leave blank for all">
+              </div>
+
+              <div class="action-buttons">
+                <button id="btnApplyFields" class="btn btn-primary">Execute GET /users</button>
+                <button id="btnPresetNameEmail" class="btn btn-secondary">Preset: ?fields=name,email</button>
+                <button id="btnClearFilter" class="btn btn-ghost">Reset to All Fields</button>
+              </div>
+            </div>
+
+            <!-- TAB 2: Add Single User -->
+            <div id="tab-single" class="tab-pane">
+              <h2 class="pane-title">POST /users - Create Single User</h2>
+              <p class="pane-desc">Validates required fields, checks for duplicate email, and returns 201 Created.</p>
+              
+              <form id="formAddUser">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="userName">Full Name *</label>
+                    <input type="text" id="userName" class="form-input" placeholder="e.g. Bruce Wayne" required>
+                  </div>
+                  <div class="form-group">
+                    <label for="userEmail">Email Address *</label>
+                    <input type="email" id="userEmail" class="form-input" placeholder="e.g. bruce@wayne.com" required>
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="userRole">Role</label>
+                    <input type="text" id="userRole" class="form-input" placeholder="e.g. CEO / Engineer">
+                  </div>
+                  <div class="form-group">
+                    <label for="userAge">Age</label>
+                    <input type="number" id="userAge" class="form-input" placeholder="e.g. 32" min="1" max="120">
+                  </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary">➕ Submit POST /users</button>
+              </form>
+            </div>
+
+            <!-- TAB 3: Bulk Add Users (POST /users/bulk) -->
+            <div id="tab-bulk-add" class="tab-pane">
+              <h2 class="pane-title">POST /users/bulk - Add Multiple Users</h2>
+              <p class="pane-desc">Processes an array of users and returns exactly which users were added and which were rejected with specific reasons (duplicate emails, format errors, etc.).</p>
+
+              <div class="preset-pills">
+                <button type="button" class="btn-pill" id="btnFillBulkSample">Load Demo Batch (Mixed Success & Duplicate)</button>
+              </div>
+
+              <div class="form-group">
+                <label for="bulkJsonInput">Users Array (JSON):</label>
+                <textarea id="bulkJsonInput" class="form-textarea" rows="9" spellcheck="false"></textarea>
+              </div>
+
+              <button id="btnSubmitBulkAdd" class="btn btn-primary">🚀 Send POST /users/bulk</button>
+            </div>
+
+            <!-- TAB 4: Bulk Delete (DELETE /users) -->
+            <div id="tab-bulk-delete" class="tab-pane">
+              <h2 class="pane-title">DELETE /users - Multiple Users Removal</h2>
+              <p class="pane-desc">Removes users by passing an array of IDs in request body (e.g. <code>[1, 2, 3]</code> or <code>{"ids": [1, 2]}</code>).</p>
+              
+              <div class="form-group">
+                <label for="bulkDeleteIdsInput">IDs to Delete (comma-separated or JSON array):</label>
+                <input type="text" id="bulkDeleteIdsInput" class="form-input" placeholder="e.g. 1, 2, 99">
+              </div>
+
+              <div class="tip-box">
+                💡 <em>Tip: You can also select rows in the user table on the right and click "Delete Selected".</em>
+              </div>
+
+              <button id="btnSubmitBulkDelete" class="btn btn-danger">🗑️ Send DELETE /users</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Right Column: Live Data Explorer & API Response -->
+        <section class="card panel-display">
+          <div class="display-header">
+            <div>
+              <h2 class="pane-title">Live Database & API Results</h2>
+              <p class="pane-desc" id="requestIndicator">Current Endpoint: <code>GET /users</code></p>
+            </div>
+            <div class="table-actions">
+              <button id="btnDeleteSelected" class="btn btn-danger-sm" disabled>
+                Delete Selected (<span id="selectedCount">0</span>)
+              </button>
+            </div>
+          </div>
+
+          <!-- Table Container -->
+          <div class="table-wrapper">
+            <table class="user-table" id="usersTable">
+              <thead>
+                <tr id="tableHeaderRow">
+                  <th style="width: 40px;"><input type="checkbox" id="checkAll"></th>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Age</th>
+                  <th style="text-align: right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="tableBody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Live API Response Inspector -->
+          <div class="response-inspector">
+            <div class="inspector-header">
+              <span class="inspector-title">📡 HTTP Response Inspector</span>
+              <span class="status-badge" id="responseStatusBadge">200 OK</span>
+            </div>
+            <pre class="json-viewer" id="jsonViewer">// Click any operation above to view real-time API response payload</pre>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <!-- Modal for Edit User (PUT /users/:id) -->
+    <div id="editModal" class="modal-overlay hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Edit User <span id="editUserTitleId"></span> (PUT /users/:id)</h3>
+          <button class="modal-close" id="btnCloseEditModal">&times;</button>
+        </div>
+        <form id="formEditUser">
+          <input type="hidden" id="editUserId">
+          <div class="form-group">
+            <label for="editUserName">Name *</label>
+            <input type="text" id="editUserName" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label for="editUserEmail">Email *</label>
+            <input type="email" id="editUserEmail" class="form-input" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="editUserRole">Role</label>
+              <input type="text" id="editUserRole" class="form-input">
+            </div>
+            <div class="form-group">
+              <label for="editUserAge">Age</label>
+              <input type="number" id="editUserAge" class="form-input">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" id="btnCancelEdit">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Changes (PUT)</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast hidden"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
