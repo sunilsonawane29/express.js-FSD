@@ -1,0 +1,139 @@
+### ==============================================================================
+### EXPRESS.JS USERS REST API - TEST REQUESTS
+### Use with VS Code REST Client extension, Thunder Client, or Postman
+### Base URL: http://localhost:3000
+### ==============================================================================
+
+@baseUrl = http://localhost:3000
+
+### 1. Root API Status & Endpoint Directory
+GET {{baseUrl}}/api
+Accept: application/json
+
+### ----------------------------------------------------------------------------
+### GET ALL USERS (Standard - all fields)
+### ----------------------------------------------------------------------------
+GET {{baseUrl}}/users
+Accept: application/json
+
+### ----------------------------------------------------------------------------
+### GET ALL USERS with ?fields=name,email projection
+### (Only returns selected fields for each user)
+### ----------------------------------------------------------------------------
+GET {{baseUrl}}/users?fields=name,email
+Accept: application/json
+
+### Another field projection example: fields=id,name,role
+GET {{baseUrl}}/users?fields=id,name,role
+Accept: application/json
+
+### ----------------------------------------------------------------------------
+### GET USER BY ID
+### ----------------------------------------------------------------------------
+GET {{baseUrl}}/users/1
+Accept: application/json
+
+### ----------------------------------------------------------------------------
+### POST /users - CREATE SINGLE USER
+### ----------------------------------------------------------------------------
+POST {{baseUrl}}/users
+Content-Type: application/json
+
+{
+  "name": "Bruce Wayne",
+  "email": "bruce.wayne@waynecorp.com",
+  "role": "CEO",
+  "age": 35
+}
+
+### POST /users with Duplicate Email (Expected: 409 Conflict)
+POST {{baseUrl}}/users
+Content-Type: application/json
+
+{
+  "name": "Duplicate Tester",
+  "email": "bruce.wayne@waynecorp.com",
+  "role": "Tester"
+}
+
+### POST /users with Invalid Email (Expected: 400 Bad Request)
+POST {{baseUrl}}/users
+Content-Type: application/json
+
+{
+  "name": "Invalid User",
+  "email": "not-an-email-address"
+}
+
+### ----------------------------------------------------------------------------
+### PUT /users/:id - UPDATE USER BY ID
+### ----------------------------------------------------------------------------
+PUT {{baseUrl}}/users/1
+Content-Type: application/json
+
+{
+  "name": "Johnathan Doe (Senior Admin)",
+  "role": "Chief Technology Officer",
+  "age": 29
+}
+
+### ----------------------------------------------------------------------------
+### DELETE /users/:id - DELETE SINGLE USER BY ID
+### ----------------------------------------------------------------------------
+DELETE {{baseUrl}}/users/1
+Accept: application/json
+
+### ----------------------------------------------------------------------------
+### POST /users/bulk - BULK ADD USERS
+### Accepts array of users; returns added and rejected (with reasons like duplicate email)
+### ----------------------------------------------------------------------------
+POST {{baseUrl}}/users/bulk
+Content-Type: application/json
+
+[
+  {
+    "name": "Clark Kent",
+    "email": "clark.kent@dailyplanet.com",
+    "role": "Journalist",
+    "age": 32
+  },
+  {
+    "name": "Duplicate of Jane",
+    "email": "jane.smith@example.com",
+    "role": "Duplicate Check"
+  },
+  {
+    "name": "Diana Prince",
+    "email": "diana@themyscira.gov",
+    "role": "Ambassador",
+    "age": 800
+  },
+  {
+    "name": "Malformed User",
+    "email": "bad-email-no-at-sign",
+    "role": "Tester"
+  },
+  {
+    "name": "Diana Clone (Duplicate in Batch)",
+    "email": "diana@themyscira.gov",
+    "role": "Clone"
+  }
+]
+
+### ----------------------------------------------------------------------------
+### DELETE /users - BULK DELETE USERS
+### Removes multiple users by an array of IDs in request body
+### Format 1: Direct JSON array [id1, id2]
+### ----------------------------------------------------------------------------
+DELETE {{baseUrl}}/users
+Content-Type: application/json
+
+[2, 3, 999]
+
+### Format 2: Object with ids array {"ids": [id1, id2]}
+DELETE {{baseUrl}}/users
+Content-Type: application/json
+
+{
+  "ids": [4]
+}
